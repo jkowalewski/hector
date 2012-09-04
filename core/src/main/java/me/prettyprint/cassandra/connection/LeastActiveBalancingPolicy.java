@@ -2,6 +2,7 @@ package me.prettyprint.cassandra.connection;
 
 import me.prettyprint.cassandra.connection.factory.HClientFactory;
 import me.prettyprint.cassandra.service.CassandraHost;
+import me.prettyprint.cassandra.service.Operation;
 
 import java.util.*;
 
@@ -25,7 +26,7 @@ public class LeastActiveBalancingPolicy implements LoadBalancingPolicy {
   private static final Logger log = LoggerFactory.getLogger(LeastActiveBalancingPolicy.class);
   
   @Override
-  public HClientPool getPool(Collection<HClientPool> pools, Set<CassandraHost> excludeHosts) {
+  public HClientPool getPool(Collection<HClientPool> pools, Set<CassandraHost> excludeHosts, Operation<?> operation) {
     List<HClientPool> vals = Lists.newArrayList(pools);
     // shuffle pools to avoid always returning the same one when we are not terribly busy
     Collections.shuffle(vals);

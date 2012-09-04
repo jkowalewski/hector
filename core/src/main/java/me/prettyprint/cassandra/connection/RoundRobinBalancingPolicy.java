@@ -5,6 +5,7 @@ import java.util.Set;
 
 import me.prettyprint.cassandra.connection.factory.HClientFactory;
 import me.prettyprint.cassandra.service.CassandraHost;
+import me.prettyprint.cassandra.service.Operation;
 
 import com.google.common.collect.Iterables;
 
@@ -27,7 +28,7 @@ public class RoundRobinBalancingPolicy implements LoadBalancingPolicy {
   
   @Override
   public HClientPool getPool(Collection<HClientPool> pools,
-      Set<CassandraHost> excludeHosts) {
+      Set<CassandraHost> excludeHosts, Operation<?> operation) {
     HClientPool pool = getPoolSafely(pools);    
     if ( excludeHosts != null && excludeHosts.size() > 0 ) {
       while ( excludeHosts.contains(pool.getCassandraHost()) ) {

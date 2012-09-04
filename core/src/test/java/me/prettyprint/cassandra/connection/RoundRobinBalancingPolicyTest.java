@@ -18,18 +18,18 @@ public class RoundRobinBalancingPolicyTest extends BaseBalancingPolicyTest {
   @Test
   public void testGetPoolOk() {
     roundRobinBalancingPolicy = new RoundRobinBalancingPolicy();
-    assertEquals(poolWith5Active.getNumActive(), roundRobinBalancingPolicy.getPool(pools, null).getNumActive());
-    assertEquals(poolWith7Active.getNumActive(), roundRobinBalancingPolicy.getPool(pools, null).getNumActive());
-    assertEquals(poolWith10Active.getNumActive(), roundRobinBalancingPolicy.getPool(pools, null).getNumActive());
-    assertEquals(poolWith5Active.getNumActive(), roundRobinBalancingPolicy.getPool(pools, null).getNumActive());
-    assertEquals(poolWith7Active.getNumActive(), roundRobinBalancingPolicy.getPool(pools, null).getNumActive());
-    assertEquals(poolWith10Active.getNumActive(), roundRobinBalancingPolicy.getPool(pools, null).getNumActive());
-    assertEquals(poolWith5Active.getNumActive(), roundRobinBalancingPolicy.getPool(pools, null).getNumActive());
-    assertEquals(poolWith7Active.getNumActive(), roundRobinBalancingPolicy.getPool(pools, null).getNumActive());
-    assertEquals(poolWith10Active.getNumActive(), roundRobinBalancingPolicy.getPool(pools, null).getNumActive());
+    assertEquals(poolWith5Active.getNumActive(), roundRobinBalancingPolicy.getPool(pools, null, null).getNumActive());
+    assertEquals(poolWith7Active.getNumActive(), roundRobinBalancingPolicy.getPool(pools, null, null).getNumActive());
+    assertEquals(poolWith10Active.getNumActive(), roundRobinBalancingPolicy.getPool(pools, null, null).getNumActive());
+    assertEquals(poolWith5Active.getNumActive(), roundRobinBalancingPolicy.getPool(pools, null, null).getNumActive());
+    assertEquals(poolWith7Active.getNumActive(), roundRobinBalancingPolicy.getPool(pools, null, null).getNumActive());
+    assertEquals(poolWith10Active.getNumActive(), roundRobinBalancingPolicy.getPool(pools, null, null).getNumActive());
+    assertEquals(poolWith5Active.getNumActive(), roundRobinBalancingPolicy.getPool(pools, null, null).getNumActive());
+    assertEquals(poolWith7Active.getNumActive(), roundRobinBalancingPolicy.getPool(pools, null, null).getNumActive());
+    assertEquals(poolWith10Active.getNumActive(), roundRobinBalancingPolicy.getPool(pools, null, null).getNumActive());
     // go to 65k to roll the counter a couple of times
     for (int x=0; x<(256*256); x++) {
-      assert roundRobinBalancingPolicy.getPool(pools, null).getNumActive() >= 5;      
+      assert roundRobinBalancingPolicy.getPool(pools, null, null).getNumActive() >= 5;      
     }
   }
   
@@ -40,10 +40,10 @@ public class RoundRobinBalancingPolicyTest extends BaseBalancingPolicyTest {
     Mockito.when(poolWith10Active.getCassandraHost()).thenReturn(new CassandraHost("127.0.0.3:9162"));
     
     roundRobinBalancingPolicy = new RoundRobinBalancingPolicy();
-    assertEquals(poolWith7Active, roundRobinBalancingPolicy.getPool(pools, new HashSet<CassandraHost>(Arrays.asList(new CassandraHost("127.0.0.1:9160")))));
-    assertEquals(poolWith10Active, roundRobinBalancingPolicy.getPool(pools, new HashSet<CassandraHost>(Arrays.asList(new CassandraHost("127.0.0.1:9160")))));
-    assertEquals(poolWith7Active, roundRobinBalancingPolicy.getPool(pools, new HashSet<CassandraHost>(Arrays.asList(new CassandraHost("127.0.0.1:9160")))));
-    assertEquals(poolWith10Active, roundRobinBalancingPolicy.getPool(pools, new HashSet<CassandraHost>(Arrays.asList(new CassandraHost("127.0.0.1:9160")))));
+    assertEquals(poolWith7Active, roundRobinBalancingPolicy.getPool(pools, new HashSet<CassandraHost>(Arrays.asList(new CassandraHost("127.0.0.1:9160"))), null));
+    assertEquals(poolWith10Active, roundRobinBalancingPolicy.getPool(pools, new HashSet<CassandraHost>(Arrays.asList(new CassandraHost("127.0.0.1:9160"))), null));
+    assertEquals(poolWith7Active, roundRobinBalancingPolicy.getPool(pools, new HashSet<CassandraHost>(Arrays.asList(new CassandraHost("127.0.0.1:9160"))), null));
+    assertEquals(poolWith10Active, roundRobinBalancingPolicy.getPool(pools, new HashSet<CassandraHost>(Arrays.asList(new CassandraHost("127.0.0.1:9160"))), null));
   }
   
   @Test
@@ -58,7 +58,7 @@ public class RoundRobinBalancingPolicyTest extends BaseBalancingPolicyTest {
         new HashSet<CassandraHost>(Arrays.asList(new CassandraHost("127.0.0.1:9160"),new CassandraHost("127.0.0.2:9161")))));
     */
     assertNotNull(roundRobinBalancingPolicy.getPool(pools, 
-        new HashSet<CassandraHost>(Arrays.asList(new CassandraHost("127.0.0.1:9160"),new CassandraHost("127.0.0.2:9161"),new CassandraHost("127.0.0.3:9162")))));
+        new HashSet<CassandraHost>(Arrays.asList(new CassandraHost("127.0.0.1:9160"),new CassandraHost("127.0.0.2:9161"),new CassandraHost("127.0.0.3:9162"))), null));
     
     
   }

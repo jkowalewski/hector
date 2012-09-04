@@ -46,19 +46,19 @@ public class DynamicBalancingPolicyTest {
     dynBalancingPolicy.add(poolWithScore7);
     dynBalancingPolicy.add(poolWithScore5);
     dynBalancingPolicy.updateScores();
-    assertEquals(poolWithScore5, dynBalancingPolicy.getPool(pools, null));
-    assertEquals(poolWithScore5, dynBalancingPolicy.getPool(pools, null));
-    assertEquals(poolWithScore5, dynBalancingPolicy.getPool(pools, null));
+    assertEquals(poolWithScore5, dynBalancingPolicy.getPool(pools, null, null));
+    assertEquals(poolWithScore5, dynBalancingPolicy.getPool(pools, null, null));
+    assertEquals(poolWithScore5, dynBalancingPolicy.getPool(pools, null, null));
     Mockito.when(poolWithScore5.score()).thenReturn(8.0);
     dynBalancingPolicy.updateScores();
-    assertEquals(poolWithScore7, dynBalancingPolicy.getPool(pools, null));
-    assertEquals(poolWithScore7, dynBalancingPolicy.getPool(pools, null));
-    assertEquals(poolWithScore7, dynBalancingPolicy.getPool(pools, null));
+    assertEquals(poolWithScore7, dynBalancingPolicy.getPool(pools, null, null));
+    assertEquals(poolWithScore7, dynBalancingPolicy.getPool(pools, null, null));
+    assertEquals(poolWithScore7, dynBalancingPolicy.getPool(pools, null, null));
     Mockito.when(poolWithScore10.score()).thenReturn(4.0);
     dynBalancingPolicy.updateScores();
-    assertEquals(poolWithScore10, dynBalancingPolicy.getPool(pools, null));
-    assertEquals(poolWithScore10, dynBalancingPolicy.getPool(pools, null));
-    assertEquals(poolWithScore10, dynBalancingPolicy.getPool(pools, null));
+    assertEquals(poolWithScore10, dynBalancingPolicy.getPool(pools, null, null));
+    assertEquals(poolWithScore10, dynBalancingPolicy.getPool(pools, null, null));
+    assertEquals(poolWithScore10, dynBalancingPolicy.getPool(pools, null, null));
   }
 
   @Test
@@ -76,9 +76,9 @@ public class DynamicBalancingPolicyTest {
     dynBalancingPolicy.updateScores();
 
     assertEquals(poolWithScore7, dynBalancingPolicy.getPool(pools,
-        new HashSet<CassandraHost>(Arrays.asList(new CassandraHost("127.0.0.1:9160")))));
+        new HashSet<CassandraHost>(Arrays.asList(new CassandraHost("127.0.0.1:9160"))), null));
     assertEquals(poolWithScore5, dynBalancingPolicy.getPool(pools,
-        new HashSet<CassandraHost>(Arrays.asList(new CassandraHost("127.0.0.3:9162")))));
+        new HashSet<CassandraHost>(Arrays.asList(new CassandraHost("127.0.0.3:9162"))), null));
   }
 
   @Test
@@ -109,7 +109,7 @@ public class DynamicBalancingPolicyTest {
     // should hit all three equal hosts over the course of 50 runs
     Set<CassandraHost> foundHosts = new HashSet<CassandraHost>();
     for (int i = 0; i < 50; i++) {
-      HClientPool foundPool = dbp.getPool(pool, null);
+      HClientPool foundPool = dbp.getPool(pool, null, null);
       CassandraHost p = foundPool.getCassandraHost();
       foundHosts.add(p);
       assert 5 == foundPool.getNumActive();

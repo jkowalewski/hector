@@ -6,6 +6,7 @@ import java.util.Set;
 
 import me.prettyprint.cassandra.connection.factory.HClientFactory;
 import me.prettyprint.cassandra.service.CassandraHost;
+import me.prettyprint.cassandra.service.Operation;
 
 /**
  * Default interface for all load balancing policies.
@@ -18,9 +19,10 @@ public interface LoadBalancingPolicy extends Serializable {
    * 
    * @param pools collection of all available pools
    * @param excludeHosts excluded pools
+   * @param the operation to be performed
    * @return a pool based on this load balancing policy
    */
-  HClientPool getPool(Collection<HClientPool> pools, Set<CassandraHost> excludeHosts);
+  HClientPool getPool(Collection<HClientPool> pools, Set<CassandraHost> excludeHosts, Operation<?> operation);
 
   /**
    * Creates a connection pool for <code>host</code>.

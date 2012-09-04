@@ -18,24 +18,24 @@ public class LeastActiveBalancingPolicyTest extends BaseBalancingPolicyTest {
   @Test
   public void testGetPoolOk() {
     leastActiveBalancingPolicy = new LeastActiveBalancingPolicy();
-    assertEquals(poolWith5Active, leastActiveBalancingPolicy.getPool(pools, null));
-    assertEquals(poolWith5Active, leastActiveBalancingPolicy.getPool(pools, null));
-    assertEquals(poolWith5Active, leastActiveBalancingPolicy.getPool(pools, null));    
+    assertEquals(poolWith5Active, leastActiveBalancingPolicy.getPool(pools, null, null));
+    assertEquals(poolWith5Active, leastActiveBalancingPolicy.getPool(pools, null, null));
+    assertEquals(poolWith5Active, leastActiveBalancingPolicy.getPool(pools, null, null));    
     Mockito.when(poolWith5Active.getNumActive()).thenReturn(8);
-    assertEquals(poolWith7Active, leastActiveBalancingPolicy.getPool(pools, null));
-    assertEquals(poolWith7Active, leastActiveBalancingPolicy.getPool(pools, null));
-    assertEquals(poolWith7Active, leastActiveBalancingPolicy.getPool(pools, null));
+    assertEquals(poolWith7Active, leastActiveBalancingPolicy.getPool(pools, null, null));
+    assertEquals(poolWith7Active, leastActiveBalancingPolicy.getPool(pools, null, null));
+    assertEquals(poolWith7Active, leastActiveBalancingPolicy.getPool(pools, null, null));
     Mockito.when(poolWith5Active.getNumActive()).thenReturn(4);
-    assertEquals(poolWith5Active, leastActiveBalancingPolicy.getPool(pools, null));
-    assertEquals(poolWith5Active, leastActiveBalancingPolicy.getPool(pools, null));
-    assertEquals(poolWith5Active, leastActiveBalancingPolicy.getPool(pools, null));
+    assertEquals(poolWith5Active, leastActiveBalancingPolicy.getPool(pools, null, null));
+    assertEquals(poolWith5Active, leastActiveBalancingPolicy.getPool(pools, null, null));
+    assertEquals(poolWith5Active, leastActiveBalancingPolicy.getPool(pools, null, null));
   }
   
   @Test
   public void testSkipExhausted() {    
     leastActiveBalancingPolicy = new LeastActiveBalancingPolicy();
-    assertEquals(poolWith7Active, leastActiveBalancingPolicy.getPool(pools, new HashSet<CassandraHost>(Arrays.asList(new CassandraHost("127.0.0.1:9160")))));
-    assertEquals(poolWith5Active, leastActiveBalancingPolicy.getPool(pools, new HashSet<CassandraHost>(Arrays.asList(new CassandraHost("127.0.0.2:9161")))));
+    assertEquals(poolWith7Active, leastActiveBalancingPolicy.getPool(pools, new HashSet<CassandraHost>(Arrays.asList(new CassandraHost("127.0.0.1:9160"))), null));
+    assertEquals(poolWith5Active, leastActiveBalancingPolicy.getPool(pools, new HashSet<CassandraHost>(Arrays.asList(new CassandraHost("127.0.0.2:9161"))), null));
   }
   
   @Test
@@ -54,7 +54,7 @@ public class LeastActiveBalancingPolicyTest extends BaseBalancingPolicyTest {
     // should hit all three equal hosts over the course of 50 runs
     Set<CassandraHost> foundHosts = new HashSet<CassandraHost>(3);
     for (int i = 0; i < 50; i++) {
-      HClientPool foundPool = leastActiveBalancingPolicy.getPool(pools, null);
+      HClientPool foundPool = leastActiveBalancingPolicy.getPool(pools, null, null);
       foundHosts.add(foundPool.getCassandraHost());
       assert 5 == foundPool.getNumActive();        
     }

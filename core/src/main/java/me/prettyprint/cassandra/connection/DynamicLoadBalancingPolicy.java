@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 import me.prettyprint.cassandra.connection.factory.HClientFactory;
 import me.prettyprint.cassandra.service.CassandraHost;
+import me.prettyprint.cassandra.service.Operation;
 import me.prettyprint.cassandra.utils.DaemonThreadPoolFactory;
 
 import org.slf4j.Logger;
@@ -74,7 +75,7 @@ public class DynamicLoadBalancingPolicy implements LoadBalancingPolicy {
   }
 
   @Override
-  public HClientPool getPool(Collection<HClientPool> pools, Set<CassandraHost> excludeHosts) {
+  public HClientPool getPool(Collection<HClientPool> pools, Set<CassandraHost> excludeHosts, Operation<?> operation) {
     List<HClientPool> poolList = Lists.newArrayList(pools);
 
     // remove the hosts from the list.
