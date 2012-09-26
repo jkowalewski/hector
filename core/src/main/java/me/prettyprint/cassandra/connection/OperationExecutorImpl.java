@@ -44,20 +44,25 @@ public class OperationExecutorImpl implements OperationExecutor {
   }
   
   @Override
-  public void executeWithFailover(Operation<?> op) {
+  public void executeOperation(Operation<?> op, HClientPool pool) {
     HOpTimer timer = connectionManager.getTimer(); 
     final Object timerToken = timer.start();
     int retries = Math.min(op.failoverPolicy.numRetries, activeHostPools.size());
     HClient client = null;
-    HClientPool pool = null;
     boolean success = false;
     boolean retryable = false;
+    int numberOfAttempts = 0; 
     Set<CassandraHost> excludeHosts = new HashSet<CassandraHost>(); // HLT.getExcludedHosts() (will be empty most times)
     // TODO start timer for limiting retry time spent
     while ( !success ) {
       try {
         // TODO how to 'timeout' on this op when underlying pool is exhausted
-        pool = getClientFromLBPolicy(excludeHosts, op);
+        numberOfAttempts += 1; 
+        
+        //If we have failed at all, need to go back to the LBP for another pool. 
+        if(numberOfAttempts > 1) { 
+          pool = getClientFromLBPolicy(excludeHosts, op);
+        }
         client = pool.borrowClient();
         Cassandra.Client c = client.getCassandra(op.keyspaceName);
         // Keyspace can be null for some system_* api calls

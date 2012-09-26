@@ -32,4 +32,8 @@ public interface LoadBalancingPolicy extends Serializable {
    * @return a connection pool
    */
   HClientPool createConnection(HClientFactory clientFactory, CassandraHost host);
+  
+  void operateWithFailover(Operation<?> op); 
+  
+  void setOperationExecutor(OperationExecutor operationExecutor); 
 }

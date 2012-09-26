@@ -67,4 +67,16 @@ public class RoundRobinBalancingPolicy implements LoadBalancingPolicy {
   public HClientPool createConnection(HClientFactory clientFactory, CassandraHost host) {
   	return new ConcurrentHClientPool(clientFactory, host);
   }
+
+  @Override
+  public void operateWithFailover(Operation<?> op) {
+    // TODO Auto-generated method stub
+    
+  }
+
+  @Override
+  public void setOperationExecutor(OperationExecutor operationExecutor) {
+    // TODO Auto-generated method stub
+    
+  }
 }

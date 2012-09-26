@@ -4,5 +4,5 @@ import me.prettyprint.cassandra.service.Operation;
 
 public interface OperationExecutor {
   
-  void executeWithFailover(Operation<?> op); 
+  void executeOperation(Operation<?> op, HClientPool clientPool); 
 }

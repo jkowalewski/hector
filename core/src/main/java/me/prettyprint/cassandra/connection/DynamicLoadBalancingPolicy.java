@@ -185,4 +185,16 @@ public class DynamicLoadBalancingPolicy implements LoadBalancingPolicy {
   public void setBadnessThreshold(double badness) {
     DYNAMIC_BADNESS_THRESHOLD = badness;
   }
+
+  @Override
+  public void operateWithFailover(Operation<?> op) {
+    // TODO Auto-generated method stub
+    
+  }
+
+  @Override
+  public void setOperationExecutor(OperationExecutor operationExecutor) {
+    // TODO Auto-generated method stub
+    
+  }
 }
