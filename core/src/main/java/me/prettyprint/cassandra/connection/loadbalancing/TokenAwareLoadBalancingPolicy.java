@@ -1,7 +1,5 @@
-package me.prettyprint.cassandra.connection;
+package me.prettyprint.cassandra.connection.loadbalancing;
 
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -10,45 +8,36 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.cassandra.config.ConfigurationException;
-import org.apache.cassandra.dht.BigIntegerToken;
 import org.apache.cassandra.dht.IPartitioner;
-import org.apache.cassandra.dht.RandomPartitioner;
 import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.EndpointDetails;
 import org.apache.cassandra.thrift.InvalidRequestException;
-import org.apache.cassandra.thrift.KeyRange;
 import org.apache.cassandra.thrift.TokenRange;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.thrift.TException;
 
 import com.google.common.collect.Iterables;
 
+import me.prettyprint.cassandra.connection.ConcurrentHClientPool;
+import me.prettyprint.cassandra.connection.HClientPool;
+import me.prettyprint.cassandra.connection.HConnectionManager;
+import me.prettyprint.cassandra.connection.LoadBalancingPolicy;
+import me.prettyprint.cassandra.connection.OperationExecutor;
 import me.prettyprint.cassandra.connection.client.HClient;
 import me.prettyprint.cassandra.connection.factory.HClientFactory;
 import me.prettyprint.cassandra.service.CassandraHost;
 import me.prettyprint.cassandra.service.Operation;
 import me.prettyprint.cassandra.service.OperationFactory.BatchMutateOperation;
 import me.prettyprint.cassandra.service.OperationFactory.RangeSliceOperation;
-import me.prettyprint.hector.api.exceptions.HUnavailableException;
+import me.prettyprint.hector.api.exceptions.HInvalidRequestException;
 
 /**
  * @author jkowalewski
  *
  */
 public class TokenAwareLoadBalancingPolicy implements LoadBalancingPolicy {
-
-  private class TokenRangeAndHosts
-  {
-    public TokenRangeAndHosts(Range<Token<?>> tokenRange, List<CassandraHost> hosts) { 
-      this.tokenRange = tokenRange; 
-      this.hosts = hosts; 
-    }
-    
-    public Range<Token<?>> tokenRange; 
-    public List<CassandraHost> hosts; 
-  }
   
   /**
    * 
@@ -58,15 +47,18 @@ public class TokenAwareLoadBalancingPolicy implements LoadBalancingPolicy {
   private IPartitioner<Token<?>> partitioner; 
   private HConnectionManager connectionManager; 
   private Map<String,List<TokenRangeAndHosts>> keyspaceToTokenRangeAndHostMap; 
-  private Map<CassandraHost,HClientPool> hostToClientPoolMapping; 
+  private Map<CassandraHost,HClientPool> activeHostsAndClientPools; 
+  private Map<Class<?>, TokenAwareOperationCommand> operationClassToExecutionCommandMap; 
   
   public TokenAwareLoadBalancingPolicy() {
     keyspaceToTokenRangeAndHostMap = new HashMap<String, List<TokenRangeAndHosts>>(); 
+    operationClassToExecutionCommandMap = new HashMap<Class<?>, TokenAwareOperationCommand>();
   }
   
+  //TOOD: consider not having this be an init method, but just a setter? 
   public void init(HConnectionManager connectionManager) { 
     this.connectionManager = connectionManager; 
-    hostToClientPoolMapping = connectionManager.getActiveHostToPoolMapping(); 
+    activeHostsAndClientPools = connectionManager.getActiveHostToPoolMapping(); 
   }
   
 
@@ -79,41 +71,24 @@ public class TokenAwareLoadBalancingPolicy implements LoadBalancingPolicy {
       determineTokenRange(op.keyspaceName); 
     }
     
-    //get the initial pool that the operation executor will use.
-    HClientPool pool = null; 
-    
-    if(pool instanceof RangeSliceOperation) {
-      //TODO: for range slices, we can do multiple gets for however many replicas fall across the token range for the keys, 
-      //or we can just use the first key range and ignore the rest. 
-      pool = getPoolFor((RangeSliceOperation)op);
+    if(!operationClassToExecutionCommandMap.containsKey(op.getClass())) { 
+      //TODO: this might not even happen - i'm not sure of a case where there would be an operation that wouldnt use this policy, but i have it here for now. 
+      throw new HInvalidRequestException("The operation is not allowed for this load balancing policy."); 
     }
     
-    //TODO: pass the pool onto the operation executor to actually perform the op. failover will request another pool from this policy, where we will RR and return the next replica.
+    TokenAwareOperationCommand command = operationClassToExecutionCommandMap.get(op.getClass()); 
     
+    command.execute(operationExecutor, op); 
   }
-
-  private HClientPool getPoolFor(RangeSliceOperation op) {
-    HClientPool selectedPool = null; 
-    List<TokenRangeAndHosts> tokenRangeAndHosts = keyspaceToTokenRangeAndHostMap.get(op.keyspaceName); 
+  
+  Operation<?> decorateOpIfRequired(Operation<?> op) { 
+    Operation<?> opToReturn = op; 
     
-    KeyRange keyRange = ((RangeSliceOperation)op).getKeyRange();
-    
-    Token<?> token = partitioner.getToken(keyRange.start_key);
-    
-    for(TokenRangeAndHosts tr : tokenRangeAndHosts) { 
-      if(tr.tokenRange.contains(token)) { 
-        List<CassandraHost> hosts = tr.hosts;  
-        
-        //TODO: round robin getting the host here.     
-        selectedPool = hostToClientPoolMapping.get(hosts.get(0));
-        
-        if(selectedPool == null) { 
-          throw new HUnavailableException("Unable to get an alive host for the desired token."); 
-        }        
-      }
+    if(op instanceof BatchMutateOperation) { 
+      opToReturn = new TokenAwareBatchMutateOperation(op); 
     }
-
-    return selectedPool; 
+    
+    return opToReturn;  
   }
 
   @SuppressWarnings("unchecked")
@@ -163,24 +138,14 @@ public class TokenAwareLoadBalancingPolicy implements LoadBalancingPolicy {
     }  
   }
   
-  private class TokenAwareBatchMutateDecorator { 
-    
-  }
 
   @Override
   public HClientPool getPool(Collection<HClientPool> pools,
       Set<CassandraHost> excludeHosts, Operation<?> operation) {
+    TokenAwareOperationCommand command = operationClassToExecutionCommandMap.get(operation.getClass()); 
     
-    HClientPool selectedPool = null; 
-    
-    if(operation instanceof RangeSliceOperation) {
-      selectedPool = getPoolFor((RangeSliceOperation)operation); 
-    }
-    else if(operation instanceof BatchMutateOperation<?>) { 
-      
-    }
-
-    return selectedPool; 
+    //TODO: making an assumption here that exclude hosts may not be necessary as the underlying map of host pools should be updated if a host is marked down, right? 
+    return command.getPool(operation); 
   }
 
 
@@ -193,7 +158,10 @@ public class TokenAwareLoadBalancingPolicy implements LoadBalancingPolicy {
 
   @Override
   public void setOperationExecutor(OperationExecutor operationExecutor) {
-    // TODO Auto-generated method stub
-    
+    TokenAwareBatchMutateCommand batchMutateCommand = new TokenAwareBatchMutateCommand(keyspaceToTokenRangeAndHostMap, partitioner, activeHostsAndClientPools); 
+    operationClassToExecutionCommandMap.put(TokenAwareBatchMutateOperation.class,batchMutateCommand); 
+    operationClassToExecutionCommandMap.put(BatchMutateOperation.class, batchMutateCommand); 
+    operationClassToExecutionCommandMap.put(RangeSliceOperation.class, new TokenAwareRangeSliceCommand(keyspaceToTokenRangeAndHostMap, partitioner, activeHostsAndClientPools));
   }
+  
 }
